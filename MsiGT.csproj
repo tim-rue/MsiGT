@@ -7,8 +7,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <AssemblyName>GraphicsSwitcher</AssemblyName>
-    <RootNamespace>GraphicsSwitcher</RootNamespace>
+    <AssemblyName>MsiGT</AssemblyName>
+    <RootNamespace>MsiGT</RootNamespace>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>false</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>

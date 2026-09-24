@@ -1,10 +1,10 @@
 using System.Diagnostics;
 
-namespace GraphicsSwitcher;
+namespace MsiGT;
 
 internal static class Program
 {
-    private const string Title = "Graphics Switcher";
+    private const string Title = "MSI GPU Tools";
 
     [STAThread]
     private static int Main(string[] args)
@@ -29,7 +29,7 @@ internal static class Program
                         $"Get_AP(0): {Convert.ToHexString(MsiAcpi.ReadActionStatus())}\n");
                     return 0;
                 default:
-                    ShowError("Usage: GraphicsSwitcher [--hybrid | --integrated | --status-file <path>]");
+                    ShowError("Usage: MsiGT [--hybrid | --integrated | --status-file <path>]");
                     return 2;
             }
         }
@@ -102,9 +102,9 @@ internal static class Program
             Caption = Title,
             Heading = $"{Name(target)} will be active after your next restart",
             Text = viaMsiService
-                ? "Run Graphics Switcher again before restarting to undo it."
+                ? "Run MsiGT again before restarting to undo it."
                 : "The MSI service didn't respond, so the setting was written to the firmware directly. " +
-                  "Run Graphics Switcher again before restarting to undo it.",
+                  "Run MsiGT again before restarting to undo it.",
             Icon = TaskDialogIcon.ShieldSuccessGreenBar,
             Buttons = { TaskDialogButton.OK },
         });

@@ -1,6 +1,6 @@
 using System.Management;
 
-namespace GraphicsSwitcher;
+namespace MsiGT;
 
 /// <summary>
 /// Minimal client for MSI's MSI_ACPI WMI interface (root\WMI), using the same

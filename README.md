@@ -1,6 +1,6 @@
-# Graphics Switcher
+# MSI GPU Tools (MsiGT)
 
-One-click switching between **Hybrid (MSHybrid)** and **Integrated** graphics on MSI laptops, without opening MSI Center.
+Utilities for MSI laptop GPUs. The first tool is one-click switching between **Hybrid (MSHybrid)** and **Integrated** graphics, without opening MSI Center.
 
 > [!WARNING]
 > This is an unofficial tool, based on reverse engineering. It changes an MSI UEFI variable and writes to the embedded
@@ -8,7 +8,7 @@ One-click switching between **Hybrid (MSHybrid)** and **Integrated** graphics on
 
 ## Usage
 
-1. Run `GraphicsSwitcher.exe` and accept the admin prompt.
+1. Run `MsiGT.exe` and accept the admin prompt.
 2. The app shows the current mode and offers **Switch and restart now** or **Switch on next restart**.
 3. The switch happens during the restart.
 
@@ -51,7 +51,7 @@ They are not based on testing. Specific uncertainties:
 **Check your laptop (read-only):** run the following as administrator.
 
 ```
-GraphicsSwitcher.exe --status-file status.txt
+MsiGT.exe --status-file status.txt
 ```
 
 The laptop is very likely compatible if `status.txt` shows `Switch supported: True, Integrated supported: True` and
@@ -75,7 +75,7 @@ Each report makes the compatibility table more reliable.
 dotnet publish -c Release -o publish
 ```
 
-The output is `publish\GraphicsSwitcher.exe`, a single file that depends on the .NET 10 runtime.
+The output is `publish\MsiGT.exe`, a single file that depends on the .NET 10 runtime.
 
 ## How it works
 
