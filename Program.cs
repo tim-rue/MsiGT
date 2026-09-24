@@ -4,7 +4,7 @@ namespace MsiGT;
 
 internal static class Program
 {
-    private const string Title = "MSI GPU Tools";
+    public const string Title = "MSI GPU Tools";
 
     [STAThread]
     private static int Main(string[] args)
@@ -16,7 +16,7 @@ internal static class Program
             switch (args.FirstOrDefault()?.ToLowerInvariant())
             {
                 case null:
-                    Toggle();
+                    Application.Run(new MainForm());
                     return 0;
                 case "--hybrid":
                     MsiGpuSwitch.RequestMode(GpuMode.Hybrid);
@@ -41,77 +41,8 @@ internal static class Program
         }
     }
 
-    private static void Toggle()
-    {
-        var state = MsiGpuSwitch.ReadState();
-        if (!state.Supported || !state.IntegratedSupported)
-        {
-            ShowError("This device's firmware does not report support for switching to Integrated graphics.\n\n" + Describe(state));
-            return;
-        }
-
-        if (state.SwitchPending)
-        {
-            var restart = new TaskDialogButton("Restart now");
-            var revert = new TaskDialogButton($"Stay in {Name(state.Current)}");
-            var result = TaskDialog.ShowDialog(new TaskDialogPage
-            {
-                Caption = Title,
-                Heading = $"Switch to {Name(state.Requested)} is pending",
-                Text = $"You're currently in {Name(state.Current)}. The switch happens when you restart.",
-                Icon = TaskDialogIcon.Information,
-                Buttons = { restart, revert, TaskDialogButton.Close },
-            });
-
-            if (result == restart)
-            {
-                MsiGpuSwitch.RequestMode(state.Requested); // make sure the firmware is armed
-                Restart();
-            }
-            else if (result == revert)
-                MsiGpuSwitch.RequestMode(state.Current);
-            return;
-        }
-
-        var target = state.Current == GpuMode.Integrated ? GpuMode.Hybrid : GpuMode.Integrated;
-        var switchNow = new TaskDialogButton("Switch and restart now");
-        var switchLater = new TaskDialogButton("Switch on next restart");
-        var choice = TaskDialog.ShowDialog(new TaskDialogPage
-        {
-            Caption = Title,
-            Heading = $"Switch to {Name(target)}?",
-            Text = $"You're currently in {Name(state.Current)}. The change takes effect after a restart.",
-            Icon = TaskDialogIcon.ShieldBlueBar,
-            Buttons = { switchNow, switchLater, TaskDialogButton.Cancel },
-            DefaultButton = switchNow,
-        });
-
-        if (choice != switchNow && choice != switchLater)
-            return;
-
-        bool viaMsiService = MsiGpuSwitch.RequestMode(target);
-
-        if (choice == switchNow)
-        {
-            Restart();
-            return;
-        }
-
-        TaskDialog.ShowDialog(new TaskDialogPage
-        {
-            Caption = Title,
-            Heading = $"{Name(target)} will be active after your next restart",
-            Text = viaMsiService
-                ? "Run MsiGT again before restarting to undo it."
-                : "The MSI service didn't respond, so the setting was written to the firmware directly. " +
-                  "Run MsiGT again before restarting to undo it.",
-            Icon = TaskDialogIcon.ShieldSuccessGreenBar,
-            Buttons = { TaskDialogButton.OK },
-        });
-    }
-
     /// <summary>Only called once the switch is fully set up, so a failure here just means restarting by hand.</summary>
-    private static void Restart()
+    internal static void Restart()
     {
         string? problem;
         try
@@ -136,7 +67,7 @@ internal static class Program
             });
     }
 
-    private static string Name(GpuMode mode) => mode switch
+    internal static string Name(GpuMode mode) => mode switch
     {
         GpuMode.Hybrid => "Hybrid (MSHybrid) graphics",
         GpuMode.Integrated => "Integrated graphics",
@@ -144,12 +75,12 @@ internal static class Program
         _ => $"unknown mode {(int)mode}",
     };
 
-    private static string Describe(GpuSwitchState s) =>
+    internal static string Describe(GpuSwitchState s) =>
         $"Current: {s.Current}\nRequested for next boot: {s.Requested}\n" +
         $"Switch supported: {s.Supported}, Integrated supported: {s.IntegratedSupported}, Discrete supported: {s.DiscreteSupported}\n" +
         $"Raw flags: 0x{s.RawFlags:X2}\n";
 
-    private static void ShowError(string message) =>
+    internal static void ShowError(string message) =>
         TaskDialog.ShowDialog(new TaskDialogPage
         {
             Caption = Title,

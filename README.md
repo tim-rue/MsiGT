@@ -1,6 +1,9 @@
 # MSI GPU Tools (MsiGT)
 
-Utilities for MSI laptop GPUs. The first tool is one-click switching between **Hybrid (MSHybrid)** and **Integrated** graphics, without opening MSI Center.
+Utilities for MSI laptop GPUs:
+
+- Switch between **Hybrid (MSHybrid)** and **Integrated** graphics without opening MSI Center.
+- Free up the discrete GPU in Hybrid mode by closing the processes that keep it awake, so it can power down.
 
 > [!WARNING]
 > This is an unofficial tool, based on reverse engineering. It changes an MSI UEFI variable and writes to the embedded
@@ -8,14 +11,39 @@ Utilities for MSI laptop GPUs. The first tool is one-click switching between **H
 
 ## Usage
 
-1. Run `MsiGT.exe` and accept the admin prompt.
-2. The app shows the current mode and offers **Switch and restart now** or **Switch on next restart**.
-3. The switch happens during the restart.
+Run `MsiGT.exe` and accept the admin prompt. The window has two tabs.
 
-If a switch is already pending, running the app again lets you restart now or cancel the switch.
+### Graphics mode
+
+1. The tab shows the current mode and offers **Switch and restart now** or **Switch on next restart**.
+2. The switch happens during the restart.
+
+If a switch is already pending, the tab lets you restart now or cancel the switch.
 If any step fails, the app shows an error and does **not** restart. A half-applied switch is rolled back.
 
-Command line options (no dialogs):
+### Free up GPU
+
+In Hybrid mode the discrete GPU should power down when nothing uses it, but apps that once touched it keep it awake.
+This tab appears in Hybrid mode (or when the mode can't be read). It lists these processes, refreshed every
+2 seconds, and shows their count in the tab title. **Close processes** closes them, with a progress bar, so the GPU
+can power down:
+
+| Process | What happens |
+| --- | --- |
+| Helper process of an app (Chrome, Edge WebView2, VS Code, Teams… GPU/utility processes) | Ended. The app recreates it, now on the power-saving GPU. |
+| App | Asked to close the way Windows does at sign-out, so it can save its state. Ended after a timeout (5 s by default). An app that refuses, e.g. because of unsaved work, is left open. |
+| Windows Explorer | Exited with its own *Exit Explorer* command and started again. |
+| Start, Search, touch keyboard and other shell hosts | Ended. Windows restarts them. |
+| Services, other accounts, core Windows processes, MSI Center's service | Left alone. |
+
+Right-click a process to mark it as **restart after closing** or **never close**. **Settings…** edits both lists, whether
+Windows components are restarted, and the timeout. Settings are stored in `%APPDATA%\MsiGT\settings.json`.
+
+A display connected to the discrete GPU keeps it on; the tab warns about that.
+
+### Command line
+
+Options (no window):
 
 | Option | Effect |
 | --- | --- |
@@ -79,6 +107,8 @@ The output is `publish\MsiGT.exe`, a single file that depends on the .NET 10 run
 
 ## How it works
 
+### Switching graphics mode
+
 The app follows the steps MSI Center takes, reverse-engineered from the MSI NBFoundation Service (`OmApSvcBroker.exe`)
 and MSI Center's `API_NB_Base Module.dll`:
 
@@ -103,6 +133,20 @@ and MSI Center's `API_NB_Base Module.dll`:
    `0xD1` with `MSI_ACPI.Set_Data`. The firmware acknowledges by setting byte 2 of `Get_AP(0)` to `2`.
 
 3. **Restart.** The firmware switches modes during boot.
+
+### Freeing the discrete GPU
+
+- **Finding the GPU:** the adapter the Windows graphics kernel flags as *hybrid discrete* (`D3DKMT_ADAPTERTYPE`),
+  the same one Windows offers as "High performance". This works with any GPU vendor.
+- **Finding its users:** the `GPU Process Memory` performance counters, which Task Manager also uses. They list
+  the same processes as `nvidia-smi`, but reading them doesn't touch the GPU. Polling `nvidia-smi` can wake it through NVML, which
+  would keep it on. The tab also reads the GPU's power state (`DEVPKEY_Device_PowerData`) and checks active displays
+  (`QueryDisplayConfig`).
+- **Restarting apps:** the command line and user token are captured before an app is closed, and the app is started
+  again with both, so it isn't restarted elevated. Store apps are started again through the shell
+  (`shell:AppsFolder\<AUMID>`), since their executables can't be launched directly.
+- **Not breaking things:** apps whose helper processes restart on the discrete GPU are reported rather than ended
+  again. Ending a Chromium GPU process repeatedly makes Chromium turn off hardware acceleration.
 
 ## License
 
