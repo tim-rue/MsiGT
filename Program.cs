@@ -35,7 +35,8 @@ internal static class Program
         }
         catch (Exception ex)
         {
-            ShowError(ex.Message);
+            // Restart() is only reached after every step succeeded, so no error here can follow a restart.
+            ShowError(ex.Message + "\n\nYour PC was not restarted.");
             return 1;
         }
     }
@@ -109,8 +110,31 @@ internal static class Program
         });
     }
 
-    private static void Restart() =>
-        Process.Start(new ProcessStartInfo("shutdown.exe", "/r /t 0") { CreateNoWindow = true, UseShellExecute = false });
+    /// <summary>Only called once the switch is fully set up, so a failure here just means restarting by hand.</summary>
+    private static void Restart()
+    {
+        string? problem;
+        try
+        {
+            using var shutdown = Process.Start(new ProcessStartInfo("shutdown.exe", "/r /t 0") { CreateNoWindow = true, UseShellExecute = false })!;
+            shutdown.WaitForExit();
+            problem = shutdown.ExitCode == 0 ? null : $"shutdown.exe exited with code {shutdown.ExitCode}.";
+        }
+        catch (Exception ex)
+        {
+            problem = ex.Message;
+        }
+
+        if (problem != null)
+            TaskDialog.ShowDialog(new TaskDialogPage
+            {
+                Caption = Title,
+                Heading = "Windows couldn't restart automatically",
+                Text = $"The graphics switch is set up and will happen when you restart your PC yourself.\n\n{problem}",
+                Icon = TaskDialogIcon.Warning,
+                Buttons = { TaskDialogButton.OK },
+            });
+    }
 
     private static string Name(GpuMode mode) => mode switch
     {

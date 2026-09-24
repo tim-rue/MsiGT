@@ -65,12 +65,35 @@ public static class MsiGpuSwitch
     /// variable, then (unless it is the mode we're already in) arms the switch in the
     /// EC so the firmware acts on it. Returns true if the MSI service recorded the
     /// mode, false if the direct UEFI fallback was used.
+    /// If arming fails, the stored mode is reset to the current one so no half-done
+    /// switch is left behind.
     /// </summary>
     public static bool RequestMode(GpuMode mode)
     {
         bool viaMsiService = StoreRequestedMode(mode);
-        if (ReadState().Current != mode)
+
+        var current = ReadState().Current;
+        if (current == mode)
+            return viaMsiService;
+
+        try
+        {
             MsiAcpi.ArmGpuSwitch();
+        }
+        catch (Exception armError)
+        {
+            try
+            {
+                StoreRequestedMode(current);
+            }
+            catch (Exception rollbackError)
+            {
+                throw new InvalidOperationException(
+                    $"{armError.Message}\n\nResetting the saved mode to {current} also failed: {rollbackError.Message}", armError);
+            }
+            throw new InvalidOperationException(
+                $"{armError.Message}\n\nThe saved mode was reset to {current}, so nothing changes on the next restart.", armError);
+        }
         return viaMsiService;
     }
 
