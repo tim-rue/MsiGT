@@ -105,6 +105,17 @@ dotnet publish -c Release -o publish
 
 The output is `publish\MsiGT.exe`, a single file that depends on the .NET 10 runtime.
 
+## Releasing
+
+Push a version tag and GitHub Actions builds the app and publishes a release with `MsiGT.exe` and a zip attached:
+
+```
+git tag v1.2.0
+git push origin v1.2.0
+```
+
+The tag sets the version stamped into the exe. Tags with a suffix, like `v1.2.0-beta.1`, are marked as pre-releases.
+
 ## How it works
 
 ### Switching graphics mode
