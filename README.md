@@ -54,8 +54,14 @@ Options (no window):
 
 ## Requirements
 
+Each [release](../../releases) has two downloads:
+
+- `MSI-GPU-Tools-<version>-win-x64.zip` (also attached as a bare exe): small, needs the .NET 10 Desktop Runtime installed.
+- `MSI-GPU-Tools-<version>-win-x64-standalone.zip`: includes the .NET runtime, so nothing else to install. About 50 MB.
+
+
 - Windows 10/11, x64
-- [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0)
+- [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0), unless you use the standalone build
 - MSI Center installed, including the *MSI NBFoundation Service*. It provides the `MSI_ACPI` WMI interface.
 - Administrator rights
 
@@ -104,11 +110,11 @@ Each report makes the compatibility table more reliable.
 dotnet publish -c Release -o publish
 ```
 
-The output is `publish\MSI GPU Tools.exe`, a single file that depends on the .NET 10 runtime.
+The output is `publish\MSI GPU Tools.exe`, a single file that depends on the .NET 10 runtime. For the standalone build, add `--self-contained -p:EnableCompressionInSingleFile=true`.
 
 ## Releasing
 
-Push a version tag and GitHub Actions builds the app and publishes a release with `MSI GPU Tools.exe` and a zip attached:
+Push a version tag and GitHub Actions builds the app and publishes a release with `MSI GPU Tools.exe`, a zip and a standalone zip attached:
 
 ```
 git tag v1.2.0

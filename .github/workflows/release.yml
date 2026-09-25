@@ -23,6 +23,8 @@ jobs:
           $version = '${{ github.ref_name }}'.TrimStart('v')
           dotnet publish -c Release -o publish -p:Version=$version
           Compress-Archive -Path "publish\MSI GPU Tools.exe", README.md, LICENSE -DestinationPath "MSI-GPU-Tools-$version-win-x64.zip"
+          dotnet publish -c Release -o publish-standalone -p:Version=$version --self-contained -p:EnableCompressionInSingleFile=true
+          Compress-Archive -Path "publish-standalone\MSI GPU Tools.exe", README.md, LICENSE -DestinationPath "MSI-GPU-Tools-$version-win-x64-standalone.zip"
 
       - name: Create release
         shell: pwsh
@@ -33,5 +35,5 @@ jobs:
           $prerelease = if ($version -match '-') { '--prerelease' } else { $null }
           gh release view '${{ github.ref_name }}' *> $null
           if ($LASTEXITCODE -eq 0) { gh release delete '${{ github.ref_name }}' --yes }
-          gh release create '${{ github.ref_name }}' "MSI-GPU-Tools-$version-win-x64.zip" "publish\MSI GPU Tools.exe" `
+          gh release create '${{ github.ref_name }}' "MSI-GPU-Tools-$version-win-x64.zip" "MSI-GPU-Tools-$version-win-x64-standalone.zip" "publish\MSI GPU Tools.exe" `
             --title "MSI GPU Tools $version" --generate-notes $prerelease
