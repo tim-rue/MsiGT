@@ -1,4 +1,4 @@
-﻿# MSI GPU Tools (MsiGT)
+# MSI GPU Tools (MsiGT)
 
 Utilities for MSI laptop GPUs:
 
@@ -30,14 +30,14 @@ can power down:
 
 | Process | What happens |
 | --- | --- |
-| Helper process of an app (Chrome, Edge WebView2, VS Code, Teamsâ€¦ GPU/utility processes) | Ended. The app recreates it, now on the power-saving GPU. |
+| Helper process of an app (Chrome, Edge WebView2, VS Code, Teams… GPU/utility processes) | Ended. The app recreates it, now on the power-saving GPU. |
 | App | Asked to close the way Windows does at sign-out, so it can save its state. Ended after a timeout (5 s by default). An app that refuses, e.g. because of unsaved work, is left open. |
 | Windows Explorer | Exited with its own *Exit Explorer* command and started again. |
 | Start, Search, touch keyboard and other shell hosts | Ended. Windows restarts them. |
 | Services, processes of other accounts, other Windows processes | Ended. The services they hosted are started again. |
-| Critical Windows processes (csrss, wininit, winlogonâ€¦), sign-in and input hosts, MSI Center's service | Left alone. |
+| Critical Windows processes (csrss, wininit, winlogon…), sign-in and input hosts, MSI Center's service | Left alone. |
 
-Right-click a process to mark it as **restart after closing** or **never close**. **Settingsâ€¦** edits both lists, whether
+Right-click a process to mark it as **restart after closing** or **never close**. **Settings…** edits both lists, whether
 Windows components are restarted, whether system processes are ended, and the timeout. Settings are stored in `%APPDATA%\MsiGT\settings.json`.
 
 A display connected to the discrete GPU keeps it on; the tab warns about that.
@@ -56,9 +56,8 @@ Options (no window):
 
 Each [release](../../releases) has two downloads:
 
-- `MSI-GPU-Tools-<version>-win-x64.zip` (also attached as a bare exe): small, needs the .NET 10 Desktop Runtime installed.
-- `MSI-GPU-Tools-<version>-win-x64-standalone.zip`: includes the .NET runtime, so nothing else to install. About 50 MB.
-
+- `MSI_GPU_Tools-<version>-win-x64.zip` (also attached as `.exe`): small, needs the .NET 10 Desktop Runtime installed.
+- `MSI_GPU_Tools-<version>-win-x64-standalone.zip` (also attached as `.exe`): includes the .NET runtime, so nothing else to install. About 50 MB.
 
 - Windows 10/11, x64
 - [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0), unless you use the standalone build
@@ -69,9 +68,9 @@ Each [release](../../releases) has two downloads:
 
 | Status | Models |
 | --- | --- |
-| âœ… Tested | MSI Creator Z16HX Studio (B13VGTO) |
-| â” Likely | Recent MSI laptops (roughly 2022 or newer; Intel 12thâ€“14th gen or Core Ultra) where MSI Center's GPU switch offers an **Integrated graphics** option. A MUX chip does not appear to be needed: the tested laptop does not support Discrete mode. |
-| âŒ Unlikely | Older models (about 2021 and earlier) that use MSI's older WMI v1 interface or older GPU switch; models whose GPU switch only offers MSHybrid/Discrete; laptops without a dedicated GPU |
+| ✅ Tested | MSI Creator Z16HX Studio (B13VGTO) |
+| ❔ Likely | Recent MSI laptops (roughly 2022 or newer; Intel 12th–14th gen or Core Ultra) where MSI Center's GPU switch offers an **Integrated graphics** option. A MUX chip does not appear to be needed: the tested laptop does not support Discrete mode. |
+| ❌ Unlikely | Older models (about 2021 and earlier) that use MSI's older WMI v1 interface or older GPU switch; models whose GPU switch only offers MSHybrid/Discrete; laptops without a dedicated GPU |
 
 The "likely" and "unlikely" rows are **estimates** from how MSI Center's code tells old and new hardware apart.
 They are not based on testing. Specific uncertainties:
@@ -95,8 +94,14 @@ to switch on firmware that does not report support.
 
 ### Help improve this list
 
-Anyone is welcome to test the app on their MSI laptop and report back by opening an issue, whether it worked or not.
-Please include:
+Anyone is welcome to test the app on their MSI laptop and report back, whether it worked or not.
+
+**It worked:** open a pull request that adds your model to the ✅ Tested row of the table above. This is the preferred
+way, since it gets your model listed right away. Put the details below in the PR description.
+
+**It didn't work, or you're not sure:** open an issue instead.
+
+Either way, please include:
 
 - the exact laptop model (for example *Creator Z16HX Studio B13VGTO*)
 - the contents of `status.txt` from the check above
@@ -114,7 +119,7 @@ The output is `publish\MSI GPU Tools.exe`, a single file that depends on the .NE
 
 ## Releasing
 
-Push a version tag and GitHub Actions builds the app and publishes a release with `MSI GPU Tools.exe`, a zip and a standalone zip attached:
+Push a version tag and GitHub Actions builds the app and publishes a release with both builds attached, each as a zip and as a bare exe:
 
 ```
 git tag v1.2.0
@@ -134,8 +139,8 @@ and MSI Center's `API_NB_Base Module.dll`:
 
    | Bits | Meaning |
    | --- | --- |
-   | 0â€“1 | Mode for the next boot (0 = Hybrid, 1 = Discrete, 2 = Integrated) |
-   | 2â€“3 | Current mode |
+   | 0–1 | Mode for the next boot (0 = Hybrid, 1 = Discrete, 2 = Integrated) |
+   | 2–3 | Current mode |
    | 4 | GPU switch supported |
    | 5 | Integrated mode supported |
    | 6 | Discrete mode *not* supported |
@@ -164,7 +169,7 @@ and MSI Center's `API_NB_Base Module.dll`:
   again with both, so it isn't restarted elevated. Store apps are started again through the shell
   (`shell:AppsFolder\<AUMID>`), since their executables can't be launched directly.
 - **Not breaking things:** processes Windows flags as critical (ending them crashes Windows) and a short list of
-  session essentials (sihost, ctfmon, conhostâ€¦) are never ended. Apps whose helper processes restart on the discrete GPU are reported rather than ended
+  session essentials (sihost, ctfmon, conhost…) are never ended. Apps whose helper processes restart on the discrete GPU are reported rather than ended
   again. Ending a Chromium GPU process repeatedly makes Chromium turn off hardware acceleration.
 
 ## License
