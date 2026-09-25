@@ -32,6 +32,7 @@ internal sealed class ModePage : UserControl
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         layout.Controls.Add(_details);
         _status.Margin = new Padding(0, 12, 0, 0);
+        _caption.TextChanged += (_, _) => _caption.Visible = _caption.Text.Length > 0; // no empty line above the heading
         Controls.Add(layout);
 
         Render();

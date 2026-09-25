@@ -15,7 +15,8 @@ internal sealed record ProcessDetails(
     string? CommandLine,
     int SessionId,
     string? UserSid,
-    string? AppUserModelId)
+    string? AppUserModelId,
+    bool IsCritical)
 {
     private static readonly Dictionary<string, string> DescriptionCache = new(StringComparer.OrdinalIgnoreCase);
 
@@ -65,7 +66,7 @@ internal sealed record ProcessDetails(
 
         var handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
         if (handle == IntPtr.Zero)
-            return pid == 4 ? new ProcessDetails(4, 0, DateTime.MinValue, "System", null, null, 0, null, null) : null;
+            return pid == 4 ? new ProcessDetails(4, 0, DateTime.MinValue, "System", null, null, 0, null, null, true) : null;
         try
         {
             if (!GetProcessTimes(handle, out long created, out _, out _, out _))
@@ -86,7 +87,8 @@ internal sealed record ProcessDetails(
                 GetCommandLine(handle),
                 sessionId,
                 GetUserSid(handle),
-                GetAppUserModelId(handle));
+                GetAppUserModelId(handle),
+                IsProcessCritical(handle, out bool critical) && critical);
         }
         finally
         {
@@ -228,6 +230,10 @@ internal sealed record ProcessDetails(
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     private static extern int GetApplicationUserModelId(IntPtr handle, ref int length, StringBuilder? buffer);
+
+    /// <summary>Critical processes (csrss, wininit, smss…) bug-check Windows when they end.</summary>
+    [DllImport("kernel32.dll")]
+    private static extern bool IsProcessCritical(IntPtr handle, out bool critical);
 
     [DllImport("advapi32.dll", SetLastError = true)]
     private static extern bool OpenProcessToken(IntPtr process, uint access, out IntPtr token);

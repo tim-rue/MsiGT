@@ -25,7 +25,7 @@ If any step fails, the app shows an error and does **not** restart. A half-appli
 
 In Hybrid mode the discrete GPU should power down when nothing uses it, but apps that once touched it keep it awake.
 This tab appears in Hybrid mode (or when the mode can't be read). It lists these processes, refreshed every
-2 seconds, and shows their count in the tab title. **Close processes** closes them, with a progress bar, so the GPU
+2 seconds, and shows their count in the tab title. **Close processes** closes them all at once, with a progress bar, so the GPU
 can power down:
 
 | Process | What happens |
@@ -34,10 +34,11 @@ can power down:
 | App | Asked to close the way Windows does at sign-out, so it can save its state. Ended after a timeout (5 s by default). An app that refuses, e.g. because of unsaved work, is left open. |
 | Windows Explorer | Exited with its own *Exit Explorer* command and started again. |
 | Start, Search, touch keyboard and other shell hosts | Ended. Windows restarts them. |
-| Services, other accounts, core Windows processes, MSI Center's service | Left alone. |
+| Services, processes of other accounts, other Windows processes | Ended. The services they hosted are started again. |
+| Critical Windows processes (csrss, wininit, winlogon…), sign-in and input hosts, MSI Center's service | Left alone. |
 
 Right-click a process to mark it as **restart after closing** or **never close**. **Settings…** edits both lists, whether
-Windows components are restarted, and the timeout. Settings are stored in `%APPDATA%\MsiGT\settings.json`.
+Windows components are restarted, whether system processes are ended, and the timeout. Settings are stored in `%APPDATA%\MsiGT\settings.json`.
 
 A display connected to the discrete GPU keeps it on; the tab warns about that.
 
@@ -156,7 +157,8 @@ and MSI Center's `API_NB_Base Module.dll`:
 - **Restarting apps:** the command line and user token are captured before an app is closed, and the app is started
   again with both, so it isn't restarted elevated. Store apps are started again through the shell
   (`shell:AppsFolder\<AUMID>`), since their executables can't be launched directly.
-- **Not breaking things:** apps whose helper processes restart on the discrete GPU are reported rather than ended
+- **Not breaking things:** processes Windows flags as critical (ending them crashes Windows) and a short list of
+  session essentials (sihost, ctfmon, conhost…) are never ended. Apps whose helper processes restart on the discrete GPU are reported rather than ended
   again. Ending a Chromium GPU process repeatedly makes Chromium turn off hardware acceleration.
 
 ## License

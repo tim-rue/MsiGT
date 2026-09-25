@@ -22,7 +22,7 @@ internal sealed class FreeGpuPage : UserControl
         Margin = new Padding(0, 8, 0, 8),
     };
     private readonly Label _status = Ui.Label();
-    private readonly ProgressBar _progress = new() { Dock = DockStyle.Fill, Visible = false, Margin = new Padding(0, 0, 0, 8) };
+    private readonly ProgressBar _progress = new() { Anchor = AnchorStyles.Left | AnchorStyles.Right, Height = 16, Visible = false, Margin = new Padding(0, 0, 0, 8) };
     private readonly Button _closeButton = Ui.Button("Close processes");
     private readonly Button _settingsButton = Ui.Button("Settings…");
     private readonly ToolStripMenuItem _restartItem = new() { CheckOnClick = false };
@@ -63,12 +63,12 @@ internal sealed class FreeGpuPage : UserControl
         _settingsButton.Click += (_, _) => EditSettings();
         _timer.Tick += (_, _) => RefreshNow();
 
-        var buttons = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Right, WrapContents = false, Margin = Padding.Empty };
+        var buttons = new FlowLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Anchor = AnchorStyles.Right, WrapContents = false, Margin = Padding.Empty };
         buttons.Controls.Add(_settingsButton);
         buttons.Controls.Add(_closeButton);
         _closeButton.Margin = Padding.Empty;
 
-        var bottom = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, Margin = Padding.Empty };
+        var bottom = new TableLayoutPanel { Anchor = AnchorStyles.Left | AnchorStyles.Right, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, ColumnCount = 2, Margin = Padding.Empty };
         bottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         bottom.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         _status.Anchor = AnchorStyles.Left | AnchorStyles.Right;
@@ -80,8 +80,9 @@ internal sealed class FreeGpuPage : UserControl
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         void Add(Control control, RowStyle style)
         {
+            // With an explicit row: auto-placement skips hidden controls (the warning) and shifts the rest.
             layout.RowStyles.Add(style);
-            layout.Controls.Add(control);
+            layout.Controls.Add(control, 0, layout.RowStyles.Count - 1);
         }
         Add(_headline, new RowStyle(SizeType.AutoSize));
         Add(_detail, new RowStyle(SizeType.AutoSize));

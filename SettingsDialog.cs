@@ -26,6 +26,12 @@ internal sealed class SettingsDialog : Form
         AutoSize = true,
         Margin = new Padding(0, 4, 0, 4),
     };
+    private readonly CheckBox _systemProcesses = new()
+    {
+        Text = "End system processes and services too (critical ones are never touched)",
+        AutoSize = true,
+        Margin = new Padding(0, 0, 0, 4),
+    };
     private readonly NumericUpDown _timeout = new() { Minimum = 1, Maximum = 60, Width = 56, Margin = new Padding(0, 0, 4, 0) };
 
     public SettingsDialog(Settings settings)
@@ -59,6 +65,7 @@ internal sealed class SettingsDialog : Form
             _grid.Rows.Add(name, NeverCloseChoice);
 
         _windowsComponents.Checked = settings.CloseWindowsComponents;
+        _systemProcesses.Checked = settings.CloseSystemProcesses;
         _timeout.Value = Math.Clamp(settings.CloseTimeoutSeconds, 1, 60);
 
         var intro = Ui.Label();
@@ -85,11 +92,11 @@ internal sealed class SettingsDialog : Form
         cancel.Margin = Padding.Empty;
         AcceptButton = ok;
         CancelButton = cancel;
-        var dialogButtons = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Right, WrapContents = false, Margin = Padding.Empty };
+        var dialogButtons = new FlowLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Anchor = AnchorStyles.Right, WrapContents = false, Margin = Padding.Empty };
         dialogButtons.Controls.Add(ok);
         dialogButtons.Controls.Add(cancel);
 
-        var bottom = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, Margin = Padding.Empty };
+        var bottom = new TableLayoutPanel { Anchor = AnchorStyles.Left | AnchorStyles.Right, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, ColumnCount = 2, Margin = Padding.Empty };
         bottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         bottom.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         bottom.Controls.Add(remove, 0, 0);
@@ -102,6 +109,7 @@ internal sealed class SettingsDialog : Form
                      (intro, new RowStyle(SizeType.AutoSize)),
                      (_grid, new RowStyle(SizeType.Percent, 100)),
                      (_windowsComponents, new RowStyle(SizeType.AutoSize)),
+                     (_systemProcesses, new RowStyle(SizeType.AutoSize)),
                      (timeoutRow, new RowStyle(SizeType.AutoSize)),
                      (bottom, new RowStyle(SizeType.AutoSize)),
                  })
@@ -139,6 +147,7 @@ internal sealed class SettingsDialog : Form
         settings.Restart = restart;
         settings.NeverClose = neverClose;
         settings.CloseWindowsComponents = _windowsComponents.Checked;
+        settings.CloseSystemProcesses = _systemProcesses.Checked;
         settings.CloseTimeoutSeconds = (int)_timeout.Value;
     }
 }

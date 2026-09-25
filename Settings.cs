@@ -17,6 +17,9 @@ internal sealed class Settings
     /// <summary>Whether Explorer and shell hosts such as Start and Search may be restarted.</summary>
     public bool CloseWindowsComponents { get; set; } = true;
 
+    /// <summary>Whether services and non-critical system processes may be ended (their services are started again).</summary>
+    public bool CloseSystemProcesses { get; set; } = true;
+
     /// <summary>How long an app gets to exit on its own before it is ended.</summary>
     public int CloseTimeoutSeconds { get; set; } = 5;
 
@@ -60,6 +63,7 @@ internal sealed class Settings
         Restart = [.. Restart],
         NeverClose = [.. NeverClose],
         CloseWindowsComponents = CloseWindowsComponents,
+        CloseSystemProcesses = CloseSystemProcesses,
         CloseTimeoutSeconds = CloseTimeoutSeconds,
     };
 }

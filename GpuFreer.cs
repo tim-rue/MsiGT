@@ -24,6 +24,7 @@ internal static class GpuFreer
 {
     private const int MaxPasses = 3;
     private const int SettleMilliseconds = 2000;
+    private const int MaxParallel = 16;
 
     public static FreeReport Run(DiscreteGpu gpu, Settings settings, IProgress<FreeProgress> progress)
     {
@@ -60,8 +61,6 @@ internal static class GpuFreer
                 if (todo.Count == 0)
                     break;
 
-                todo = Order(todo);
-
                 // Capture restart details before closing anything: closing an app can take its children with it.
                 var relaunchFor = new Dictionary<GpuUser, Relaunch>();
                 foreach (var user in todo.Where(u => u.Restart || u.Kind == GpuUserKind.Explorer))
@@ -76,27 +75,52 @@ internal static class GpuFreer
                     }
                 }
 
+                // Skipped at the end if the app is still (or again) running; Explorer is started again right away.
+                relaunches.AddRange(relaunchFor.Where(r => r.Key.Kind != GpuUserKind.Explorer).Select(r => r.Value));
+
+                // Everything is closed at once: most of the time goes into waiting for apps to exit. Helpers come
+                // in a second wave, since closing their app usually takes them along.
                 int total = done + todo.Count + 1;
-                foreach (var user in todo)
+                var inProgress = new List<GpuUser>();
+                void Report()
                 {
-                    progress.Report(new FreeProgress(done, total, Describe(user)));
-                    relaunchFor.TryGetValue(user, out var relaunch);
-                    if (relaunch != null && user.Kind != GpuUserKind.Explorer)
-                        relaunches.Add(relaunch); // skipped at the end if the app is still (or again) running
-                    try
+                    lock (inProgress)
+                        progress.Report(new FreeProgress(done, total, Describe(inProgress)));
+                }
+                void Problem(string text)
+                {
+                    lock (problems)
+                        problems.Add(text);
+                }
+
+                foreach (var wave in todo.GroupBy(u => u.Kind == GpuUserKind.Helper).OrderBy(g => g.Key))
+                {
+                    Parallel.ForEach(wave, new ParallelOptions { MaxDegreeOfParallelism = MaxParallel }, user =>
                     {
-                        Close(user, relaunch, timeout, problems);
-                    }
-                    catch (Exception ex)
-                    {
-                        problems.Add($"Couldn't close {user.DisplayName}: {ex.Message}");
-                    }
-                    finally
-                    {
-                        if (user.Kind == GpuUserKind.Explorer)
-                            relaunch?.Dispose(); // Explorer is started again right away
-                    }
-                    done++;
+                        lock (inProgress)
+                            inProgress.Add(user);
+                        Report();
+                        relaunchFor.TryGetValue(user, out var relaunch);
+                        try
+                        {
+                            Close(user, relaunch, timeout, Problem);
+                        }
+                        catch (Exception ex)
+                        {
+                            Problem($"Couldn't close {user.DisplayName}: {ex.Message}");
+                        }
+                        finally
+                        {
+                            if (user.Kind == GpuUserKind.Explorer)
+                                relaunch?.Dispose();
+                            lock (inProgress)
+                            {
+                                inProgress.Remove(user);
+                                done++;
+                            }
+                            Report();
+                        }
+                    });
                 }
 
                 progress.Report(new FreeProgress(done, total, "Waiting for the GPU to be released…"));
@@ -133,39 +157,22 @@ internal static class GpuFreer
         }
     }
 
-    /// <summary>Apps first (parents before their children, which usually close along with them), helpers last.</summary>
-    private static List<GpuUser> Order(List<GpuUser> users)
+    /// <summary>E.g. "Closing Google Chrome, Microsoft Teams and 3 more…".</summary>
+    private static string Describe(List<GpuUser> inProgress)
     {
-        var pids = users.Select(u => u.Process.Pid).ToHashSet();
-        int Depth(ProcessDetails p)
+        if (inProgress.Count == 0)
+            return "Closing processes…";
+        var names = inProgress.Select(u => u.Kind == GpuUserKind.Explorer ? "Windows Explorer" : u.DisplayName).Distinct().ToList();
+        string list = names.Count switch
         {
-            int depth = 0;
-            for (var parent = p.GetLiveParent(); parent != null && depth < 8; parent = parent.GetLiveParent())
-                if (pids.Contains(parent.Pid))
-                    depth++;
-            return depth;
-        }
-
-        return users
-            .OrderBy(u => u.Kind switch
-            {
-                GpuUserKind.App => 0,
-                GpuUserKind.Explorer => 1,
-                GpuUserKind.WindowsComponent => 2,
-                _ => 3,
-            })
-            .ThenBy(u => Depth(u.Process))
-            .ToList();
+            1 => names[0],
+            2 => $"{names[0]} and {names[1]}",
+            _ => $"{names[0]}, {names[1]} and {names.Count - 2} more",
+        };
+        return $"Closing {list}…";
     }
 
-    private static string Describe(GpuUser user) => user.Kind switch
-    {
-        GpuUserKind.Explorer => "Restarting Windows Explorer…",
-        GpuUserKind.App => $"Closing {user.DisplayName}…",
-        _ => $"Ending {user.DisplayName}…",
-    };
-
-    private static void Close(GpuUser user, Relaunch? relaunch, TimeSpan timeout, List<string> problems)
+    private static void Close(GpuUser user, Relaunch? relaunch, TimeSpan timeout, Action<string> problem)
     {
         using var process = OpenIfAlive(user.Process);
         if (process == null)
@@ -178,16 +185,31 @@ internal static class GpuFreer
                 Terminate(process);
                 break;
 
+            case GpuUserKind.SystemProcess:
+                Terminate(process);
+                foreach (var service in user.Services ?? [])
+                {
+                    try
+                    {
+                        Services.Start(service);
+                    }
+                    catch (Exception ex)
+                    {
+                        problem($"The {service} service couldn't be started again: {ex.Message}");
+                    }
+                }
+                break;
+
             case GpuUserKind.Explorer:
                 if (relaunch == null)
                     return; // Explorer is only exited when we know we can start it again (reported above)
-                RestartExplorer(user, process, relaunch, timeout, problems);
+                RestartExplorer(user, process, relaunch, timeout, problem);
                 break;
 
             case GpuUserKind.App:
                 if (!CloseApp(process, timeout))
-                    problems.Add($"{user.DisplayName} didn't agree to close, possibly because of unsaved work. " +
-                                 "Close it yourself, then try again.");
+                    problem($"{user.DisplayName} didn't agree to close, possibly because of unsaved work. " +
+                            "Close it yourself, then try again.");
                 break;
         }
     }
@@ -263,14 +285,14 @@ internal static class GpuFreer
         return true;
     }
 
-    private static void RestartExplorer(GpuUser user, Process process, Relaunch relaunch, TimeSpan timeout, List<string> problems)
+    private static void RestartExplorer(GpuUser user, Process process, Relaunch relaunch, TimeSpan timeout, Action<string> problem)
     {
         var tray = FindWindowW("Shell_TrayWnd", null);
         if (tray == IntPtr.Zero || GetWindowThreadProcessId(tray, out int shellPid) == 0 || shellPid != process.Id)
         {
             // A File Explorer window running in its own process, not the shell: just close it.
             if (!CloseApp(process, timeout))
-                problems.Add($"{user.DisplayName} didn't agree to close.");
+                problem($"{user.DisplayName} didn't agree to close.");
             return;
         }
 
