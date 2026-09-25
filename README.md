@@ -11,7 +11,7 @@ Utilities for MSI laptop GPUs:
 
 ## Usage
 
-Run `MsiGT.exe` and accept the admin prompt. The window has two tabs.
+Run `MSI GPU Tools.exe` and accept the admin prompt. The window has two tabs.
 
 ### Graphics mode
 
@@ -80,7 +80,7 @@ They are not based on testing. Specific uncertainties:
 **Check your laptop (read-only):** run the following as administrator.
 
 ```
-MsiGT.exe --status-file status.txt
+"MSI GPU Tools.exe" --status-file status.txt
 ```
 
 The laptop is very likely compatible if `status.txt` shows `Switch supported: True, Integrated supported: True` and
@@ -108,7 +108,7 @@ The output is `publish\MsiGT.exe`, a single file that depends on the .NET 10 run
 
 ## Releasing
 
-Push a version tag and GitHub Actions builds the app and publishes a release with `MsiGT.exe` and a zip attached:
+Push a version tag and GitHub Actions builds the app and publishes a release with `MSI GPU Tools.exe` and a zip attached:
 
 ```
 git tag v1.2.0
