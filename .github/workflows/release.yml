@@ -1,4 +1,4 @@
-name: Release
+﻿name: Release
 
 on:
   push:
@@ -22,7 +22,7 @@ jobs:
         run: |
           $version = '${{ github.ref_name }}'.TrimStart('v')
           dotnet publish -c Release -o publish -p:Version=$version
-          Compress-Archive -Path publish\MsiGT.exe, README.md, LICENSE -DestinationPath "MsiGT-$version-win-x64.zip"
+          Compress-Archive -Path "publish\MSI GPU Tools.exe", README.md, LICENSE -DestinationPath "MsiGT-$version-win-x64.zip"
 
       - name: Create release
         shell: pwsh
@@ -31,5 +31,5 @@ jobs:
         run: |
           $version = '${{ github.ref_name }}'.TrimStart('v')
           $prerelease = if ($version -match '-') { '--prerelease' } else { $null }
-          gh release create '${{ github.ref_name }}' "MsiGT-$version-win-x64.zip" publish\MsiGT.exe `
+          gh release create '${{ github.ref_name }}' "MsiGT-$version-win-x64.zip" "publish\MSI GPU Tools.exe" `
             --title "MsiGT $version" --generate-notes $prerelease

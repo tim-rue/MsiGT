@@ -1,4 +1,4 @@
-# MSI GPU Tools (MsiGT)
+﻿# MSI GPU Tools (MsiGT)
 
 Utilities for MSI laptop GPUs:
 
@@ -30,14 +30,14 @@ can power down:
 
 | Process | What happens |
 | --- | --- |
-| Helper process of an app (Chrome, Edge WebView2, VS Code, Teams… GPU/utility processes) | Ended. The app recreates it, now on the power-saving GPU. |
+| Helper process of an app (Chrome, Edge WebView2, VS Code, Teamsâ€¦ GPU/utility processes) | Ended. The app recreates it, now on the power-saving GPU. |
 | App | Asked to close the way Windows does at sign-out, so it can save its state. Ended after a timeout (5 s by default). An app that refuses, e.g. because of unsaved work, is left open. |
 | Windows Explorer | Exited with its own *Exit Explorer* command and started again. |
 | Start, Search, touch keyboard and other shell hosts | Ended. Windows restarts them. |
 | Services, processes of other accounts, other Windows processes | Ended. The services they hosted are started again. |
-| Critical Windows processes (csrss, wininit, winlogon…), sign-in and input hosts, MSI Center's service | Left alone. |
+| Critical Windows processes (csrss, wininit, winlogonâ€¦), sign-in and input hosts, MSI Center's service | Left alone. |
 
-Right-click a process to mark it as **restart after closing** or **never close**. **Settings…** edits both lists, whether
+Right-click a process to mark it as **restart after closing** or **never close**. **Settingsâ€¦** edits both lists, whether
 Windows components are restarted, whether system processes are ended, and the timeout. Settings are stored in `%APPDATA%\MsiGT\settings.json`.
 
 A display connected to the discrete GPU keeps it on; the tab warns about that.
@@ -63,9 +63,9 @@ Options (no window):
 
 | Status | Models |
 | --- | --- |
-| ✅ Tested | MSI Creator Z16HX Studio (B13VGTO) |
-| ❔ Likely | Recent MSI laptops (roughly 2022 or newer; Intel 12th–14th gen or Core Ultra) where MSI Center's GPU switch offers an **Integrated graphics** option. A MUX chip does not appear to be needed: the tested laptop does not support Discrete mode. |
-| ❌ Unlikely | Older models (about 2021 and earlier) that use MSI's older WMI v1 interface or older GPU switch; models whose GPU switch only offers MSHybrid/Discrete; laptops without a dedicated GPU |
+| âœ… Tested | MSI Creator Z16HX Studio (B13VGTO) |
+| â” Likely | Recent MSI laptops (roughly 2022 or newer; Intel 12thâ€“14th gen or Core Ultra) where MSI Center's GPU switch offers an **Integrated graphics** option. A MUX chip does not appear to be needed: the tested laptop does not support Discrete mode. |
+| âŒ Unlikely | Older models (about 2021 and earlier) that use MSI's older WMI v1 interface or older GPU switch; models whose GPU switch only offers MSHybrid/Discrete; laptops without a dedicated GPU |
 
 The "likely" and "unlikely" rows are **estimates** from how MSI Center's code tells old and new hardware apart.
 They are not based on testing. Specific uncertainties:
@@ -104,7 +104,7 @@ Each report makes the compatibility table more reliable.
 dotnet publish -c Release -o publish
 ```
 
-The output is `publish\MsiGT.exe`, a single file that depends on the .NET 10 runtime.
+The output is `publish\MSI GPU Tools.exe`, a single file that depends on the .NET 10 runtime.
 
 ## Releasing
 
@@ -128,8 +128,8 @@ and MSI Center's `API_NB_Base Module.dll`:
 
    | Bits | Meaning |
    | --- | --- |
-   | 0–1 | Mode for the next boot (0 = Hybrid, 1 = Discrete, 2 = Integrated) |
-   | 2–3 | Current mode |
+   | 0â€“1 | Mode for the next boot (0 = Hybrid, 1 = Discrete, 2 = Integrated) |
+   | 2â€“3 | Current mode |
    | 4 | GPU switch supported |
    | 5 | Integrated mode supported |
    | 6 | Discrete mode *not* supported |
@@ -158,7 +158,7 @@ and MSI Center's `API_NB_Base Module.dll`:
   again with both, so it isn't restarted elevated. Store apps are started again through the shell
   (`shell:AppsFolder\<AUMID>`), since their executables can't be launched directly.
 - **Not breaking things:** processes Windows flags as critical (ending them crashes Windows) and a short list of
-  session essentials (sihost, ctfmon, conhost…) are never ended. Apps whose helper processes restart on the discrete GPU are reported rather than ended
+  session essentials (sihost, ctfmon, conhostâ€¦) are never ended. Apps whose helper processes restart on the discrete GPU are reported rather than ended
   again. Ending a Chromium GPU process repeatedly makes Chromium turn off hardware acceleration.
 
 ## License
